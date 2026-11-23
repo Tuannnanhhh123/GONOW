@@ -19,8 +19,6 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<!-- [AI] Bố cục: header → 3 section (Đồ ăn / Đặt xe / Đơn hàng) → footer. Lớp phủ: #auth (trang đăng nhập), #drawerWrap (giỏ hàng), #modal (cửa hàng, khu vực, xác nhận chuyến xe).
-     Mọi khung ảnh đều để trống (nền xám). Xem images/README.txt để biết đặt ảnh ở đâu. -->
 <header class="top">
   <div class="bar">
     <button class="logo" data-act="home" aria-label="GoNow – Trang chủ">Go<span>Now</span></button>
@@ -55,7 +53,6 @@
 <main>
   <!-- ================= TRANG CHỦ: ĐỒ ĂN ================= -->
   <section id="food">
-    <!-- Hero: video nền toàn chiều rộng (đặt video trong js/config.js → INTRO_VIDEO) -->
     <div class="hero loading" id="hero" role="region" aria-roledescription="carousel" aria-label="Ưu đãi nổi bật">
       <div class="heroMedia" id="introVideo"></div>
       <div class="wrap heroIn">
@@ -77,8 +74,6 @@
         <button class="next" data-act="slide" data-id="cats" aria-label="Xem thêm danh mục">›</button>
       </div>
 
-      
-
       <div class="secHead"><h2 id="promosHead">Ưu đãi hôm nay</h2></div>
       <p class="sub">Món điểm cao nhất. Nhập <b>FOOD10</b> hoặc <b>FREESHIP</b> khi thanh toán.</p>
       <div class="railWrap">
@@ -94,8 +89,6 @@
         <label class="chk"><input type="checkbox" id="onlyFav"> Chỉ món yêu thích</label>
       </div>
       <div id="foodGrid" class="grid"></div>
-
-      
 
       <div class="secHead"><h2 id="faq">Câu hỏi thường gặp</h2></div>
       <div class="faq">
@@ -113,7 +106,6 @@
     <p class="sub">Nhập <b>RIDE15</b> giảm 15% chuyến xe.</p>
     <div class="rideLayout">
       <div class="panel ridePanel">
-        <!-- Chế độ Google Maps -->
         <div id="rideMapUI" hidden>
           <p class="rideTip">📍 Trình duyệt sẽ hỏi quyền vị trí để lấy điểm đón của bạn. Gõ địa chỉ hoặc chạm vào bản đồ để chọn nơi đến — giá tính theo số km đi đường thực tế.</p>
           <div class="route">
@@ -137,7 +129,6 @@
           </div>
           <p class="note">Gõ địa chỉ để chọn gợi ý, hoặc bấm lên bản đồ. Kéo ghim A/B để chỉnh vị trí.</p>
         </div>
-        <!-- Chế độ chọn quận (khi chưa có Google Maps key) -->
         <div id="rideLegacy" hidden>
           <div class="two">
             <label>Điểm đón<select id="from"></select></label>
@@ -328,14 +319,13 @@
 
 <div id="toast" role="status"></div>
 
-<!-- Firebase Authentication (bản compat). Nếu không có mạng hoặc chưa cấu hình, trang đăng nhập tự chạy chế độ demo. -->
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script defer src="js/config.js"></script>
 <script defer src="js/data.js"></script>
 <script defer src="js/storage.js"></script>
-<script defer src="js/guard.js"></script>
+<script defer src="js/Guard.js"></script>
 <script defer src="js/app.js"></script>
 </body>
 </html>
