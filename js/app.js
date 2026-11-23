@@ -909,9 +909,20 @@ function applyVoucher() {
   renderCurrent();
 }
 
+// Dự phòng nếu chưa khai báo ở file khác
+if (typeof guardCheck !== "function") {
+  window.guardCheck = function () { return ""; };
+}
+if (typeof guardRecord !== "function") {
+  window.guardRecord = function () {};
+}
+if (typeof guardCancel !== "function") {
+  window.guardCancel = function () {};
+}
+
 // ---- ĐƠN HÀNG ----
 function confirmOrder() {
-  if (blockUnverified()) return;   // phải đăng nhập và xác minh email mới đặt được
+  if (typeof blockUnverified === "function" && blockUnverified()) return;   // phải đăng nhập và xác minh email mới đặt được
   let detail, items = null, subtotal, ship = 0, store = null;
   if (ctx === "food") {
     const phone = (contact.phone || (user && user.phone) || "").replace(/[\s.]/g, "");
@@ -931,7 +942,8 @@ function confirmOrder() {
   const t = calc(subtotal, ship);
   const blocked = guardCheck(ctx, { total: t.total, items, phone: ctx === "food" ? contact.phone : "", addr: ctx === "food" ? contact.addr : "", note: ctx === "food" ? contact.note : "" });
   if (blocked) { toast(blocked); return; }
-  const order = { id: ref, type: ctx, detail, items, ...t, uid: myUid(),
+  const orderId = (typeof ref !== "undefined" && ref) ? ref : ("GN" + Date.now().toString().slice(-6));
+  const order = { id: orderId, type: ctx, detail, items, ...t, uid: myUid(),
     ...(ctx === "food" ? { phone: contact.phone, address: contact.addr.trim(), note: contact.note.trim(), storeId: store ? store.id : 0, storeName: store ? store.name : "", km: cartKm() } : { from: trip.from, to: trip.to, vehicle: VEHICLES[trip.vehicle].name, km: distanceKm() }),
     paid: null,   // luôn trả khi nhận hàng (COD)
 
