@@ -1,4 +1,4 @@
-// [AI] Logic chính của GoNow. Chia theo khu vực: tiện ích → ảnh → đăng nhập → đồ ăn → cửa hàng → giỏ hàng → đặt xe → QR → giỏ/modal → đơn hàng → trang chủ → sự kiện → khởi tạo.
+// [AI] Logic chính của GoNow. Chia theo khu vực: tiện ích -> ảnh -> đăng nhập -> đồ ăn -> cửa hàng -> giỏ hàng -> đặt xe -> QR -> giỏ/modal -> đơn hàng -> trang chủ -> sự kiện -> khởi tạo.
 const $ = s => document.querySelector(s);
 const money = n => n.toLocaleString("vi-VN") + "đ";
 const foodById = id => FOODS.find(f => f.id === id);
@@ -19,7 +19,7 @@ const pic = (src, cls, icon = "") => `<span class="${cls}"><img src="${src}" alt
 const fbReady = typeof firebase !== "undefined" && !!FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith("DIEN");
 let auth = null;
 if (fbReady) {
-  try { const fbApp = firebase.initializeApp(FIREBASE_CONFIG); auth = fbApp.auth(); dbStart(fbApp, false); }
+  try { const fbApp = firebase.initializeApp(FIREBASE_CONFIG); auth = fbApp.auth(); if (typeof dbStart === "function") dbStart(fbApp, false); }
   catch (err) { console.error("Firebase lỗi:", err); }
 }
 const useFirebase = !!auth;
@@ -47,7 +47,6 @@ let storesShown = 6;
 
 // Hàng ô vuông trên cùng: [nhãn, hành động, tham số]. Ảnh: images/quick/1.png, 2.png...
 const QUICK = [
-  
   ["Xe máy", "ride", "bike"], ["Ô tô 4 chỗ", "ride", "car4"],
   ["Yêu thích", "favOnly", ""], ["Ưu đãi", "toPromos", ""]
 ];
@@ -61,7 +60,7 @@ function toast(msg) {
 const goto = sel => $(sel).scrollIntoView({ behavior: "smooth", block: "start" });
 
 function showTab(tab) {
-  if (tab === "account" && !user) return openAuth();   // chưa đăng nhập → mở trang đăng nhập
+  if (tab === "account" && !user) return openAuth();   // chưa đăng nhập -> mở trang đăng nhập
   ["food", "ride", "orders", "account"].forEach(name => {
     $("#" + name).hidden = name !== tab;
     document.querySelectorAll(`[data-tab="${name}"]`).forEach(b => b.classList.toggle("active", name === tab));
@@ -113,14 +112,13 @@ function renderHero() {
   $("#heroDots").innerHTML = hs.list.map((_, k) => `<button type="button" data-act="heroGo" data-id="${k}" aria-label="Chuyển tới slide ${k + 1}"></button>`).join("");
   showHero(0, true);
   const hero = $("#hero");
-  // Chỉ hiện chữ hero khi ảnh đầu đã tải xong (chờ tối đa 1,5 giây) → không bị nháy chữ trước ảnh
   const reveal = () => hero.classList.remove("loading"), firstImg = $("#introVideo img");
   if (firstImg && !firstImg.complete) { firstImg.addEventListener("load", reveal, { once: true }); firstImg.addEventListener("error", reveal, { once: true }); setTimeout(reveal, 1500); }
   else reveal();
   ["mouseenter", "focusin"].forEach(ev => hero.addEventListener(ev, () => { hs.hover = true; }));
   ["mouseleave", "focusout"].forEach(ev => hero.addEventListener(ev, () => { hs.hover = false; }));
   hero.addEventListener("touchstart", e => { hs.x0 = e.touches[0].clientX; }, { passive: true });
-  hero.addEventListener("touchend", e => {   // vuốt trái/phải để chuyển slide
+  hero.addEventListener("touchend", e => {
     if (hs.x0 === null) return;
     const dx = e.changedTouches[0].clientX - hs.x0; hs.x0 = null;
     if (Math.abs(dx) > 50) moveHero(dx < 0 ? 1 : -1);
@@ -130,7 +128,6 @@ function renderHero() {
 function showHero(i, first) {
   const n = hs.list.length; hs.i = ((i % n) + n) % n;
   const x = hs.list[hs.i], box = $(".heroIn");
-  // Slide cũ giữ nguyên độ mờ cho tới khi slide mới phủ kín → không bị "chớp" nền giữa hai ảnh
   const slides = [...document.querySelectorAll(".hslide")], old = slides.find(el => el.classList.contains("on"));
   slides.forEach((el, k) => {
     if (k === hs.i) { el.classList.remove("prev"); el.classList.add("on"); }
@@ -149,12 +146,11 @@ function showHero(i, first) {
 const moveHero = d => { showHero(hs.i + d); restartHero(); };
 function restartHero() {
   clearInterval(hs.timer);
-  if (hs.list.length < 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;   // người dùng tắt chuyển động → không tự chạy
+  if (hs.list.length < 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   hs.timer = setInterval(() => { if (!hs.hover && !document.hidden) showHero(hs.i + 1); }, 6000);
 }
 
 // ---- ĐĂNG NHẬP / ĐĂNG KÝ (trang riêng, Firebase Auth) ----
-// Đăng nhập bằng email + mật khẩu; số điện thoại nhập bình thường khi đăng ký/đặt hàng, chỉ bắt buộc xác minh email.
 const AUTH_ERR = {
   "auth/invalid-email": "Email không hợp lệ.",
   "auth/weak-password": "Mật khẩu cần ít nhất 6 ký tự.",
@@ -164,12 +160,11 @@ const AUTH_ERR = {
   "auth/wrong-password": "Sai mật khẩu.",
   "auth/too-many-requests": "Thử quá nhiều lần. Hãy đợi một lúc rồi thử lại.",
   "auth/network-request-failed": "Lỗi mạng. Kiểm tra kết nối internet.",
-  "auth/unauthorized-domain": "Tên miền chưa được cho phép. Thêm vào Firebase → Authentication → Settings → Authorized domains.",
-  "auth/operation-not-allowed": "Chưa bật phương thức đăng nhập này trong Firebase → Authentication → Sign-in method (Email/Password).",
+  "auth/unauthorized-domain": "Tên miền chưa được cho phép. Thêm vào Firebase -> Authentication -> Settings -> Authorized domains.",
+  "auth/operation-not-allowed": "Chưa bật phương thức đăng nhập này trong Firebase -> Authentication -> Sign-in method (Email/Password).",
   "auth/requires-recent-login": "Phiên đăng nhập đã cũ. Hãy đăng xuất và đăng nhập lại."
 };
 
-// Trả về 9 số sau +84 nếu hợp lệ (đầu 3,5,7,8,9), ngược lại ""
 function normPhone(v) {
   let d = v.replace(/\D/g, "");
   if (d.startsWith("84")) d = d.slice(2);
@@ -184,7 +179,7 @@ function authValid() {
 }
 const updateAuthBtn = () => { $("#authGo").disabled = !authValid(); };
 
-let authReason = "";   // lý do mở trang đăng nhập (vd: cần đăng nhập để đặt hàng)
+let authReason = "";
 function showReason(t) { const n = $("#authReason"); n.textContent = t || ""; n.hidden = !t; }
 function renderAuth() {
   const reg = authMode === "register";
@@ -208,11 +203,10 @@ function openAuth(reason = "") {
   setTimeout(() => $("#aEmail").focus(), 50);
 }
 const closeAuth = () => { $("#auth").hidden = true; authReason = ""; };
-// ---- XÁC MINH EMAIL (bắt buộc trước khi đặt hàng; SĐT nhập bình thường, không qua SMS) ----
 const isVerified = u => !!(u && !u.isAnonymous && u.emailVerified);
 const verifiedPhone = u => { const m = ((u && u.phoneNumber) || "").match(/^\+84(\d{9})$/); return m ? "0" + m[1] : ""; };
 const vMsg = (t, ok) => { const m = $("#vmsg"); m.className = "msg " + (ok ? "ok" : "bad"); m.textContent = t || ""; };
-function coolDown(sel, label, sec) {          // khóa nút "gửi lại" trong sec giây để tránh gửi liên tục
+function coolDown(sel, label, sec) {
   const b = $(sel); if (!b) return;
   let n = sec; b.disabled = true;
   const tick = () => { if (n <= 0) { b.disabled = false; b.textContent = label; return; } b.textContent = `${label} (${n--}s)`; setTimeout(tick, 1000); };
@@ -244,14 +238,13 @@ async function checkEmailVerified() {
   try { await auth.currentUser.reload(); } catch (err) { return vMsg(AUTH_ERR[err.code] || "Không kiểm tra được (" + err.code + ")"); }
   const u = auth.currentUser;
   if (!u.emailVerified) return vMsg("Email chưa được xác minh. Hãy bấm vào đường dẫn trong email rồi thử lại.");
-  await u.getIdToken(true);                  // làm mới quyền để máy chủ biết email đã xác minh
+  await u.getIdToken(true);
   setUser(u); renderVerify(); vMsg("Email đã được xác minh.", true);
 }
 function finishVerify() {
   if (!isVerified(auth.currentUser)) return vMsg("Cần xác minh email trước.");
   closeAuth(); toast("Tài khoản đã xác minh. Bạn có thể đặt hàng.");
 }
-// Chặn đặt hàng nếu chưa đăng nhập / chưa xác minh email. Trả về true nếu bị chặn (và mở sẵn màn hình cần làm).
 function blockUnverified() {
   if (!useFirebase) { if (user) return false; openAuth("Vui lòng đăng nhập để đặt hàng."); return true; }
   const u = auth.currentUser;
@@ -275,12 +268,12 @@ function renderUser() {
   const b = $("#loginBtn");
   b.innerHTML = user ? `<span class="avatar sm">${esc(initial(user.name))}</span><span class="uname">${esc(user.name)}</span>` : "Đăng nhập";
   b.setAttribute("aria-label", user ? "Tài khoản của " + user.name : "Đăng nhập");
-  if (!$("#account").hidden) { if (user) renderAccount(); else showTab("food"); }   // đăng xuất khi đang xem trang tài khoản → về trang chủ
+  if (!$("#account").hidden) { if (user) renderAccount(); else showTab("food"); }
 }
 
-// ---- TÀI KHOẢN: xem thông tin, đổi tên, đổi mật khẩu ----
 function renderAccount() {
   if (!user) return;
+  orders = load("gonow_orders", []);
   const mine = orders.filter(o => !o.uid || o.uid === myUid());
   const done = mine.filter(o => !o.cancelled && o.status === 4);
   $("#acMe").innerHTML = `<span class="avatar">${esc(initial(user.name))}</span>
@@ -314,7 +307,7 @@ async function changePassword() {
   const btn = $("#pwGo"); btn.disabled = true;
   try {
     const u = auth.currentUser;
-    await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, cur));   // xác nhận lại mật khẩu cũ
+    await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, cur));
     await u.updatePassword(nw);
     ["#acCur", "#acNew", "#acNew2"].forEach(id => { $(id).value = ""; });
     acMsg("#pwMsg", "Đã đổi mật khẩu. Lần đăng nhập sau hãy dùng mật khẩu mới.", true); toast("Đã đổi mật khẩu");
@@ -326,7 +319,7 @@ async function submitAuth() {
   if (!authValid()) return;
   const reg = authMode === "register", name = $("#aName").value.trim(), email = authEmail(), pass = $("#aPass").value;
   const msg = $("#amsg"), btn = $("#authGo"), fromOrder = !!authReason;
-  if (!useFirebase) {   // chế độ demo: không kiểm tra mật khẩu, không xác minh được
+  if (!useFirebase) {
     const phone = reg ? "0" + normPhone($("#aPhone").value) : "";
     user = { name: reg ? name : email.split("@")[0], email, phone }; save("gonow_user", user);
     renderUser(); closeAuth(); if (!fromOrder) { showTab("account"); window.scrollTo({ top: 0 }); } return toast("Đăng nhập thành công (chế độ demo)");
@@ -350,7 +343,7 @@ async function submitAuth() {
     }
   } catch (err) {
     msg.textContent = err.code === "auth/operation-not-allowed"
-      ? "Dự án Firebase “" + FIREBASE_CONFIG.projectId + "” chưa bật đăng nhập Email/Password (Authentication → Sign-in method). Mã lỗi: " + err.code
+      ? "Dự án Firebase “" + FIREBASE_CONFIG.projectId + "” chưa bật đăng nhập Email/Password (Authentication -> Sign-in method). Mã lỗi: " + err.code
       : (AUTH_ERR[err.code] || "Có lỗi xảy ra (" + err.code + ")");
     updateAuthBtn();
   }
@@ -364,7 +357,6 @@ async function resetPassword() {
   catch (err) { m.className = "msg bad"; m.textContent = AUTH_ERR[err.code] || "Không gửi được email (" + err.code + ")"; }
 }
 
-// ---- HỘP XÁC NHẬN dùng chung (thay cho confirm() mặc định của trình duyệt) ----
 const CFM_ICONS = {
   logout: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
   trash: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>',
@@ -427,33 +419,34 @@ function toggleFav(id) {
 }
 
 // ---- CỬA HÀNG (mô phỏng) ----
-// Khoảng cách = đường chim bay từ khu vực đã chọn × 1.3 + độ lệch trong khu vực của cửa hàng
 function storeKm(s) {
   const [x1, y1] = DISTRICTS[loc], [x2, y2] = DISTRICTS[s.district];
   return Math.round((Math.hypot(x2 - x1, y2 - y1) * 1.3 + s.near) * 10) / 10;
 }
 const cartStoreObj = () => STORES.find(s => s.id === cartStore);
 const cartKm = () => { const s = cartStoreObj(); return s ? storeKm(s) : 0; };
-// Phí giao = phí cơ bản (SHIP_FEE, admin chỉnh) cho 2 km đầu + 5.000đ mỗi km tiếp theo
 const shipFeeKm = km => SHIP_FEE + Math.max(0, Math.ceil(km - 2)) * 5000;
 const shipFee = () => shipFeeKm(cartKm());
 const storeMin = km => Math.round(km / 25 * 60) + 12;
 const chip = code => { const v = VOUCHERS[code]; if (!v) return ""; return `<span class="chip">${code}: ${v.pct ? "giảm " + v.pct + "%" : "miễn phí giao" + (v.min ? " từ " + v.min / 1000 + "K" : "")}</span>`; };
 
-function storeCard(s) {
-  return `<button class="store" data-act="store" data-id="${s.id}">
+function renderStores() {
+  const el = $("#storeGrid");
+  if (!el || typeof STORES === "undefined") return;
+  const list = STORES.slice(0, storesShown);
+  el.innerHTML = list.map(s => `<button class="store" data-act="store" data-id="${s.id}">
     ${pic(imgOf("store", s), "logoBox", catIcon(s.cats[0]))}
     <span class="sname">${esc(s.name)}</span>
     <span class="smeta"><span>${storeKm(s)} km • ★ ${s.rating}</span><span>Giao ${money(shipFeeKm(storeKm(s)))}</span></span>
-    <span class="chips">${s.promos.map(chip).join("")}</span></button>`;
+    <span class="chips">${s.promos.map(chip).join("")}</span></button>`).join("");
+  if ($("#moreStores")) $("#moreStores").hidden = storesShown >= STORES.length;
 }
-
 
 const renderLoc = () => { $("#locText").textContent = loc + ", TP.HCM"; };
 function setLoc(d) {
   loc = d; save("gonow_loc", loc);
   renderLoc(); renderStores();
-  $("#from").value = loc; renderRide();   // điểm đón mặc định = khu vực đã chọn
+  $("#from").value = loc; renderRide();
   closeModal(); toast("Đã chọn khu vực " + d);
 }
 
@@ -469,7 +462,7 @@ function cartChanged() {
 
 function addCart(id, sid = 0) {
   const f = foodById(id), cur = STORES.find(s => s.id === cartStore);
-  if (!sid) {   // thêm từ danh sách món: giữ quán đang chọn nếu quán đó bán món này, không thì chọn quán gần nhất
+  if (!sid) {
     sid = cur && cart.length && cur.cats.includes(f.cat) ? cur.id
       : (STORES.filter(s => s.cats.includes(f.cat)).sort((x, y) => storeKm(x) - storeKm(y))[0] || {}).id || 0;
   }
@@ -495,7 +488,6 @@ function changeQty(id, delta) {
   cartChanged();
 }
 
-// Công thức tiền: tổng = tạm tính − giảm giá + phí giao. Sửa quy tắc giảm giá tại đây.
 function calc(subtotal, ship) {
   if (voucher && voucher.min && subtotal < voucher.min) { voucher = null; voucherMsg = { text: "Đơn không còn đủ điều kiện, đã gỡ mã.", ok: false }; }
   let discount = 0;
@@ -507,23 +499,18 @@ function calc(subtotal, ship) {
 }
 
 // ---- ĐẶT XE ----
-// Hai chế độ: "map" (Google Maps, khi có GOOGLE_MAPS_KEY) và "legacy" (chọn quận mô phỏng như cũ).
-// Bản đồ thật: Google Maps nếu có GOOGLE_MAPS_KEY, không thì OpenStreetMap (miễn phí, không cần key).
-// Nếu không tải được bản đồ (mất mạng...) thì tự quay về chế độ chọn quận mô phỏng.
 const useGoogle = typeof GOOGLE_MAPS_KEY !== "undefined" && !!GOOGLE_MAPS_KEY;
 let rideMode = "map";
 const gm = { st: "idle", seq: 0, acSeq: { from: 0, to: 0 }, mk: {}, sug: { from: [], to: [] }, active: "from", token: null, line: null, lib: {}, map: null };
-const VN_BOUNDS = { west: 106.3, east: 107.1, south: 10.3, north: 11.2 };   // ưu tiên gợi ý quanh TP.HCM
+const VN_BOUNDS = { west: 106.3, east: 107.1, south: 10.3, north: 11.2 };
 const ll = v => ({ lat: typeof v.lat === "function" ? v.lat() : v.lat, lng: typeof v.lng === "function" ? v.lng() : v.lng });
 
 function distanceKm() {
   if (rideMode === "map") return trip.fromLoc && trip.toLoc && !trip.busy ? trip.km : 0;
   if (!trip.from || !trip.to || trip.from === trip.to) return 0;
   const [x1, y1] = DISTRICTS[trip.from], [x2, y2] = DISTRICTS[trip.to];
-  // Khoảng cách đường chim bay × 1.3 (hệ số đường đi), làm tròn 0,1 km
   return Math.max(1, Math.round(Math.hypot(x2 - x1, y2 - y1) * 1.3 * 10) / 10);
 }
-// Cước = giá mở cửa + km × giá mỗi km (làm tròn nghìn đồng)
 const fareOf = (v, km) => Math.round((v.base + km * v.perKm) / 1000) * 1000;
 const kmUnit = () => (rideMode === "map" ? (trip.exact ? "" : " (ước tính)") : " (mô phỏng)");
 
@@ -550,8 +537,7 @@ function renderRide() {
   $("#bookBtn").textContent = ok ? "Đặt xe ngay" : trip.busy ? "Đang tính quãng đường…" : map ? "Nhập điểm đón và điểm đến" : "Chọn 2 khu vực khác nhau";
 }
 
-// ---- Google Maps: tải khi mở tab Đặt xe lần đầu ----
-window.gm_authFailure = () => {   // Google gọi hàm này khi key sai / chưa bật dịch vụ / chưa có billing
+window.gm_authFailure = () => {
   if (rideMode !== "map") return;
   gm.st = "failed"; setRideMode("legacy"); toast("Google Maps báo lỗi key. Đang dùng chế độ chọn quận.");
 };
@@ -583,14 +569,13 @@ async function initRideMap() {
     });
     gm.map.addListener("click", e => pickOnMap(e.latLng));
     gm.st = "ready"; mapMsg("");
-    if (!gm.autoLocated && !trip.fromLoc) { gm.autoLocated = true; locateMe(true); }   // tự hỏi vị trí hiện tại
+    if (!gm.autoLocated && !trip.fromLoc) { gm.autoLocated = true; locateMe(true); }
   } catch (err) {
     console.error("Google Maps lỗi:", err);
     gm.st = "failed"; setRideMode("legacy"); toast("Chưa tải được Google Maps. Đang dùng chế độ chọn quận.");
   }
 }
 
-// Lấy vị trí hiện tại → đặt làm điểm đón. auto = true: tự hỏi quyền khi vừa mở tab Đặt xe (chỉ 1 lần)
 function locateMe(auto) {
   if (gm.st !== "ready") return auto ? 0 : toast("Bản đồ chưa sẵn sàng.");
   if (!navigator.geolocation) return auto ? 0 : toast("Trình duyệt không hỗ trợ định vị.");
@@ -628,7 +613,6 @@ function updateMarkers() {
   });
 }
 
-// ---- OpenStreetMap (miễn phí): Leaflet = bản đồ, Photon/Nominatim = tìm địa chỉ, OSRM = đường đi và số km ----
 function focusMap(pt) {
   if (useGoogle) { gm.map.panTo(pt); gm.map.setZoom(16); } else gm.map.setView([pt.lat, pt.lng], 16);
 }
@@ -652,7 +636,7 @@ async function initOsmMap() {
     gm.map.on("click", e => pickOnMap(e.latlng));
     gm.st = "ready"; mapMsg("");
     setTimeout(() => gm.map.invalidateSize(), 60);
-    if (!gm.autoLocated && !trip.fromLoc) { gm.autoLocated = true; locateMe(true); }   // tự hỏi vị trí hiện tại
+    if (!gm.autoLocated && !trip.fromLoc) { gm.autoLocated = true; locateMe(true); }
   } catch (err) {
     console.error("Bản đồ lỗi:", err);
     gm.st = "failed"; setRideMode("legacy"); toast("Chưa tải được bản đồ (kiểm tra mạng). Đang dùng chế độ chọn quận.");
@@ -682,7 +666,7 @@ async function osmReverse(q) {
   return `${q.lat.toFixed(5)}, ${q.lng.toFixed(5)}`;
 }
 async function osmSearch(text) {
-  try {   // Photon (dữ liệu OpenStreetMap) hỗ trợ gợi ý khi gõ
+  try {
     const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(text)}&limit=6&lat=10.78&lon=106.70&lang=default`)).json();
     const out = (j.features || []).filter(f => !f.properties.countrycode || f.properties.countrycode === "VN").map(f => {
       const pr = f.properties, main = pr.name || [pr.housenumber, pr.street].filter(Boolean).join(" ");
@@ -711,7 +695,7 @@ async function osmSuggest(which) {
   }
   list.hidden = false;
 }
-async function osrmRoute(a, b) {   // máy chủ demo của OSRM (miễn phí, dữ liệu OpenStreetMap)
+async function osrmRoute(a, b) {
   const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`);
   const j = await r.json();
   if (j.code !== "Ok" || !j.routes || !j.routes[0]) throw new Error("OSRM: " + (j.code || r.status));
@@ -742,7 +726,6 @@ const haversineKm = (a, b) => {
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 
-// Lấy quãng đường thật: ưu tiên Routes API (Route.computeRoutes), rồi Directions, cuối cùng ước tính đường chim bay × 1.3
 async function computeRoute() {
   const a = trip.fromLoc, b = trip.toLoc;
   clearRoute();
@@ -766,7 +749,7 @@ async function computeRoute() {
       km = res.routes[0].legs[0].distance.value / 1000; path = res.routes[0].overview_path.map(ll); exact = true;
     } catch (err) { console.warn("Directions API:", err); }
   }
-  if (seq !== gm.seq) return;   // người dùng đã đổi điểm trong lúc chờ
+  if (seq !== gm.seq) return;
   if (!exact) { km = haversineKm(a, b) * 1.3; path = [a, b]; toast("Chưa lấy được đường đi thật, đang ước tính quãng đường."); }
   trip.km = Math.max(1, Math.round(km * 10) / 10); trip.exact = exact; trip.busy = false;
   if (useGoogle) {
@@ -780,7 +763,6 @@ async function computeRoute() {
   renderRide();
 }
 
-// Gợi ý địa chỉ (Places API New). Ô nhập tự vẽ để đồng bộ giao diện với web.
 async function suggest(which) {
   if (!useGoogle) return osmSuggest(which);
   const inp = $(which === "from" ? "#pFrom" : "#pTo"), list = $(which === "from" ? "#acFrom" : "#acTo"), q = inp.value.trim();
@@ -806,7 +788,7 @@ function bindRideInputs() {
     const inp = $(w === "from" ? "#pFrom" : "#pTo"); let t;
     inp.addEventListener("input", () => {
       if (trip[w + "Loc"]) { trip[w + "Loc"] = null; updateMarkers(); clearRoute(); renderRide(); }
-      clearTimeout(t); t = setTimeout(() => suggest(w), useGoogle ? 250 : 600);   // OpenStreetMap: gõ chậm lại để không bị giới hạn lượt tìm
+      clearTimeout(t); t = setTimeout(() => suggest(w), useGoogle ? 250 : 600);
     });
     inp.addEventListener("focus", () => { gm.active = w; if (!trip[w + "Loc"]) suggest(w); });
     inp.addEventListener("keydown", e => {
@@ -821,11 +803,10 @@ function resetCheckout(mode) {
   ref = "GN" + Date.now().toString().slice(-8);
 }
 function openDrawer() { resetCheckout("food"); $("#modal").hidden = true; $("#drawerWrap").hidden = false; renderDrawer(); }
-function openModal(mode) { guardOpen(); resetCheckout(mode); $("#drawerWrap").hidden = true; $("#modal").hidden = false; renderModal(); }
+function openModal(mode) { if (typeof guardOpen === "function") guardOpen(); resetCheckout(mode); $("#drawerWrap").hidden = true; $("#modal").hidden = false; renderModal(); }
 const closeModal = () => { $("#modal").hidden = true; $("#drawerWrap").hidden = true; };
 const renderCurrent = () => (ctx === "food" ? renderDrawer() : renderModal());
 
-// Phần chung: mã giảm giá + cách thanh toán (+ QR) và bảng tổng tiền
 const contactHTML = () => ctx !== "food" ? "" : `<div style="display:grid;gap:8px;margin:12px 0">
     <input class="v" id="cPhone" inputmode="tel" autocomplete="tel" placeholder="Số điện thoại nhận hàng" value="${esc(contact.phone || (user && user.phone) || "")}">
     <input class="v" id="cAddr" autocomplete="street-address" placeholder="Địa chỉ giao (số nhà, đường, phường)" value="${esc(contact.addr)}">
@@ -885,11 +866,10 @@ function renderModal() {
       <div class="acts"><button class="btn" data-act="openCart">Xem giỏ hàng</button><button class="btn ghost" data-act="close">Tiếp tục xem</button></div>`;
     return;
   }
-  // ctx === "ride": xác nhận chuyến xe
   const v = VEHICLES[trip.vehicle], km = distanceKm();
   const t = calc(fareOf(v, km), 0);
   $("#modalBody").innerHTML = `<h2>Xác nhận chuyến xe</h2>
-    <div class="row"><span>${esc(trip.from)} → ${esc(trip.to)}</span><b>~${km} km</b></div>
+    <div class="row"><span>${esc(trip.from)} -> ${esc(trip.to)}</span><b>~${km} km</b></div>
     <div class="row"><span>${v.name}</span><b>${money(t.subtotal)}</b></div>
     <p class="note">${rideMode === "map" ? "Giá chỉ là ước tính, có thể thay đổi theo thực tế." : "Khoảng cách mô phỏng, giá chỉ là ước tính."}</p>
     ${payHTML(t)}${sumHTML(t)}
@@ -909,20 +889,14 @@ function applyVoucher() {
   renderCurrent();
 }
 
-// Dự phòng nếu chưa khai báo ở file khác
-if (typeof guardCheck !== "function") {
-  window.guardCheck = function () { return ""; };
-}
-if (typeof guardRecord !== "function") {
-  window.guardRecord = function () {};
-}
-if (typeof guardCancel !== "function") {
-  window.guardCancel = function () {};
-}
+if (typeof guardCheck !== "function") window.guardCheck = function () { return ""; };
+if (typeof guardRecord !== "function") window.guardRecord = function () {};
+if (typeof guardCancel !== "function") window.guardCancel = function () {};
 
 // ---- ĐƠN HÀNG ----
 function confirmOrder() {
-  if (typeof blockUnverified === "function" && blockUnverified()) return;   // phải đăng nhập và xác minh email mới đặt được
+  if (typeof blockUnverified === "function" && blockUnverified()) return;
+  orders = load("gonow_orders", []);
   let detail, items = null, subtotal, ship = 0, store = null;
   if (ctx === "food") {
     const phone = (contact.phone || (user && user.phone) || "").replace(/[\s.]/g, "");
@@ -930,32 +904,37 @@ function confirmOrder() {
     if (contact.addr.trim().length < 8) { toast("Nhập địa chỉ giao hàng đầy đủ"); $("#cAddr")?.focus(); return; }
     contact.phone = phone; save("gonow_contact", contact);
     store = cartStoreObj();
-    // Lưu tên + giá + danh mục tại thời điểm đặt, để admin vẫn thấy đúng dù sau này món bị sửa/xóa
     items = cart.map(c => { const f = foodById(c.id); return { id: c.id, qty: c.qty, name: f.name, price: f.price, cat: f.cat }; });
     detail = (store ? [`Cửa hàng: ${store.name}`] : []).concat(cart.map(c => `${foodById(c.id).name} × ${c.qty}`));
     subtotal = cartSubtotal(); ship = shipFee();
   } else {
     const km = distanceKm();
-    detail = [`${trip.from} → ${trip.to}`, `${VEHICLES[trip.vehicle].name}, ~${km} km${kmUnit()}`];
+    if (!km || km <= 0) { toast("Vui lòng chọn điểm đón và điểm đến hợp lệ."); return; }
+    detail = [`${trip.from} -> ${trip.to}`, `${VEHICLES[trip.vehicle].name}, ~${km} km${kmUnit()}`];
     subtotal = fareOf(VEHICLES[trip.vehicle], km);
   }
   const t = calc(subtotal, ship);
   const blocked = guardCheck(ctx, { total: t.total, items, phone: ctx === "food" ? contact.phone : "", addr: ctx === "food" ? contact.addr : "", note: ctx === "food" ? contact.note : "" });
   if (blocked) { toast(blocked); return; }
   const orderId = (typeof ref !== "undefined" && ref) ? ref : ("GN" + Date.now().toString().slice(-6));
-  const order = { id: orderId, type: ctx, detail, items, ...t, uid: myUid(),
-    ...(ctx === "food" ? { phone: contact.phone, address: contact.addr.trim(), note: contact.note.trim(), storeId: store ? store.id : 0, storeName: store ? store.name : "", km: cartKm() } : { from: trip.from, to: trip.to, vehicle: VEHICLES[trip.vehicle].name, km: distanceKm() }),
-    paid: null,   // luôn trả khi nhận hàng (COD)
-
+  const order = {
+    id: orderId, type: ctx, detail, items, ...t, uid: myUid(),
+    ...(ctx === "food"
+      ? { phone: contact.phone, address: contact.addr.trim(), note: contact.note.trim(), storeId: store ? store.id : 0, storeName: store ? store.name : "", km: cartKm() }
+      : { from: trip.from, to: trip.to, vehicle: VEHICLES[trip.vehicle].name, km: distanceKm() }),
+    paid: null,
     code: voucher ? voucher.code : "", pay: ctx === "food" ? COD : COD_RIDE, status: 0, cancelled: false,
     createdAt: new Date().toLocaleString("vi-VN"), ts: Date.now(),
-    customer: user ? user.name + (user.phone ? " • " + user.phone : "") : "Khách vãng lai" };
-  orders.unshift(order); save("gonow_orders", orders); guardRecord();
+    customer: user ? user.name + (user.phone ? " • " + user.phone : "") : "Khách vãng lai"
+  };
+  orders.unshift(order);
+  save("gonow_orders", orders);
+  lastOrdersSig = JSON.stringify(orders);
+  if (typeof guardRecord === "function") guardRecord();
   if (ctx === "food") { cart = []; cartChanged(); }
   closeModal(); showTab("orders"); window.scrollTo({ top: 0 }); toast(`Đặt thành công! Mã đơn ${order.id}`);
 }
 
-// Nội dung chính của đơn: món ăn (ảnh, số lượng, giá) hoặc lộ trình chuyến xe
 function orderBody(o) {
   if (o.type === "food") {
     const lines = (o.items || []).map(i => {
@@ -967,7 +946,7 @@ function orderBody(o) {
     return (o.storeName ? `<p class="oStore">🏪 <b>${esc(o.storeName)}</b>${o.km ? ` • cách bạn ${o.km} km` : ""}</p>` : "")
       + (lines ? `<ul class="oLines">${lines}</ul>` : `<p>${o.detail.map(esc).join("<br>")}</p>`);
   }
-  const [a, b] = o.from ? [o.from, o.to] : String(o.detail[0] || "").split(" → ");
+  const [a, b] = o.from ? [o.from, o.to] : String(o.detail[0] || "").split(" -> ");
   return `<div class="oRoute"><div><i class="rA">A</i><span>${esc(a || "")}</span></div><div><i class="rB">B</i><span>${esc(b || "")}</span></div></div>`;
 }
 function orderInfo(o) {
@@ -998,6 +977,7 @@ function orderCard(o) {
 }
 
 function renderOrders() {
+  orders = load("gonow_orders", []);
   const type = $("#orderFilter").value, st = $("#orderStatus").value;
   const mine = orders.filter(o => !o.uid || o.uid === myUid());
   const live = mine.filter(o => !o.cancelled && o.status < 4).length, done = mine.filter(o => !o.cancelled && o.status === 4);
@@ -1011,15 +991,14 @@ function renderOrders() {
 }
 
 function updateOrder(id, fn) {
+  orders = load("gonow_orders", []);
   const o = orders.find(x => x.id === id);
   if (o) { fn(o); save("gonow_orders", orders); renderOrders(); }
 }
 
-// Ảnh danh mục: ưu tiên images/cat/<tên-không-dấu>.jpg (vd mon-nuoc.jpg), nếu chưa có thì dùng số thứ tự cũ 1.jpg, 2.jpg...
 const slug = c => norm(c).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const catPic = (c, i) => `<span class="catImg"><img src="images/cat/${slug(c)}.jpg" alt="" onerror="this.onerror=function(){this.remove()};this.src='images/cat/${i + 1}.jpg'"></span>`;
 
-// ---- TRANG CHỦ: lời chào, ô nhanh, danh mục, ưu đãi ----
 function renderHome() {
   $("#quick").innerHTML = QUICK.map(([label, act, id], i) =>
     `<button class="qk" data-act="${act}" data-id="${id}">${pic(`images/quick/${i + 1}.png`, "qIcon")}${label}</button>`).join("");
@@ -1027,12 +1006,11 @@ function renderHome() {
   $("#cats").innerHTML = cats.map((c, i) => `<button class="cat" data-act="pickCat" data-id="${c}">
     ${catPic(c, i)}<span>${c}</span></button>`).join("");
   $("#ftCats").innerHTML = cats.map(c => `<li><button class="fl" data-act="pickCat" data-id="${c}">${c}</button></li>`).join("");
-  const top = [...FOODS].sort((a, b) => b.rating - a.rating).slice(0, 6);   // 6 món đánh giá cao nhất
+  const top = [...FOODS].sort((a, b) => b.rating - a.rating).slice(0, 6);
   $("#promos").innerHTML = top.map(f => foodCard(f, true)).join("");
   updateRails();
 }
 
-// ---- SỰ KIỆN: gom vào một chỗ bằng event delegation ----
 const actions = {
   home: () => { closeAuth(); showTab("food"); window.scrollTo({ top: 0, behavior: "smooth" }); },
   openCart: openDrawer,
@@ -1052,7 +1030,6 @@ const actions = {
     const r = $("#" + id), end = r.scrollLeft + r.clientWidth >= r.scrollWidth - 4;
     r.scrollTo({ left: end ? 0 : r.scrollLeft + r.clientWidth * 0.8, behavior: "smooth" });
   },
-  // đăng nhập
   login: () => { if (!user) openAuth(); else { showTab("account"); window.scrollTo({ top: 0 }); } },
   closeAuth: closeAuth,
   openVerify: () => openVerify(),
@@ -1067,7 +1044,6 @@ const actions = {
   del: id => { cart = cart.filter(c => c.id !== id); cartChanged(); },
   clear: () => askConfirm({ icon: "trash", danger: true, title: "Xóa toàn bộ giỏ hàng?", text: "Tất cả món trong giỏ sẽ bị xóa.", yes: "Xóa giỏ hàng", no: "Giữ lại" })
     .then(ok => { if (ok) { cart = []; cartChanged(); } }),
-  // đặt xe + Google Maps
   useGps: () => locateMe(false),
   swapRoute: () => {
     if (gm.st !== "ready") return;
@@ -1083,7 +1059,7 @@ const actions = {
     try {
       const place = pred.toPlace();
       await place.fetchFields({ fields: ["location", "formattedAddress"] });
-      gm.token = null;   // kết thúc phiên gợi ý
+      gm.token = null;
       setPoint(w, { ...ll(place.location), address: pred.text.text });
     } catch (err) { console.warn(err); toast("Không lấy được vị trí địa điểm này."); }
   },
@@ -1093,6 +1069,7 @@ const actions = {
   toOrders: () => { showTab("orders"); window.scrollTo({ top: 0 }); },
   logout: logout, saveName: saveName, changePw: changePassword,
   reorder: id => {
+    orders = load("gonow_orders", []);
     const o = orders.find(x => x.id === id), items = o && o.items ? o.items.filter(i => foodById(i.id)) : [];
     if (!items.length) return toast("Các món trong đơn này hiện không còn bán.");
     const go = () => { cart = items.map(i => ({ id: i.id, qty: i.qty })); cartStore = o.storeId || 0; cartChanged(); openDrawer(); toast("Đã thêm lại các món vào giỏ"); };
@@ -1103,11 +1080,13 @@ const actions = {
   book: () => { if (distanceKm() > 0) openModal("ride"); },
   applyV: applyVoucher, confirm: confirmOrder,
   cancel: id => askConfirm({ icon: "warn", danger: true, title: "Hủy đơn này?", text: `Đơn ${id} sẽ bị hủy và không thể khôi phục.`, yes: "Hủy đơn", no: "Giữ đơn" })
-    .then(ok => { if (ok) updateOrder(id, o => { o.cancelled = true; guardCancel(); }); }),
+    .then(ok => { if (ok) updateOrder(id, o => { o.cancelled = true; if (typeof guardCancel === "function") guardCancel(); }); }),
   resetDemo: () => askConfirm({ icon: "trash", danger: true, title: "Xóa dữ liệu demo?", text: "Giỏ hàng, món yêu thích và lịch sử đơn sẽ bị xóa khỏi trình duyệt này.", yes: "Xóa dữ liệu", no: "Giữ lại" })
     .then(ok => {
       if (!ok) return;
-      clearDemoData(); cart = []; favs = []; orders = [];
+      if (typeof clearDemoData === "function") clearDemoData();
+      cart = []; favs = []; orders = [];
+      save("gonow_orders", orders);
       cartChanged(); renderHome(); renderFood(); renderOrders(); toast("Đã xóa dữ liệu demo");
     })
 };
@@ -1115,7 +1094,6 @@ const actions = {
 document.addEventListener("click", e => {
   if (e.target.id === "confirmWrap") return closeConfirm(false);
   if (!e.target.closest(".acBox")) document.querySelectorAll(".acList").forEach(l => { l.hidden = true; });
-  // Liên kết chưa có trang đích (footer): không nhảy lên đầu trang
   const dead = e.target.closest('a[href="#"]');
   if (dead) { e.preventDefault(); return toast("Mục này chưa có trong bản demo"); }
   const tabBtn = e.target.closest("[data-tab]");
@@ -1129,7 +1107,7 @@ document.addEventListener("click", e => {
 document.addEventListener("input", e => { if (e.target.closest("#auth")) updateAuthBtn(); });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { if (cfmResolve) closeConfirm(false); else if (!$("#auth").hidden) closeAuth(); else closeModal(); }
-  if (e.key === "Tab" && cfmResolve) {   // giữ focus trong hộp xác nhận
+  if (e.key === "Tab" && cfmResolve) {
     e.preventDefault(); ($("#cfmNo") === document.activeElement ? $("#cfmYes") : $("#cfmNo")).focus();
   }
   if (e.key === "Enter") {
@@ -1138,8 +1116,6 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// Dữ liệu đổi từ nơi khác (Firestore, hoặc tab admin cùng máy) → cập nhật tại chỗ, KHÔNG tải lại trang.
-// Chỉ vẽ lại khi dữ liệu thật sự khác, gom nhiều thông báo liên tiếp làm một, và không đụng tới ngăn giỏ hàng khi chỉ có đơn hàng đổi.
 const dataSig = () => JSON.stringify([ALL_FOODS, VOUCHERS, SHIP_FEE]);
 let lastDataSig = dataSig(), lastOrdersSig = JSON.stringify(load("gonow_orders", [])), refreshTimer = 0;
 function softRefresh() {
@@ -1149,13 +1125,13 @@ function softRefresh() {
     const dataChanged = ds !== lastDataSig, ordersChanged = os !== lastOrdersSig;
     if (!dataChanged && !ordersChanged) return;
     lastDataSig = ds; lastOrdersSig = os;
-    if (ordersChanged) { orders = load("gonow_orders", []); renderOrders(); }
+    if (ordersChanged) { orders = load("gonow_orders", []); if (!$("#orders").hidden) renderOrders(); }
     if (dataChanged) { cart = cart.filter(c => foodById(c.id)); cartChanged(); renderHome(); renderFood(); renderStores(); }
   }, 150);
 }
-window.addEventListener("gn-remote", softRefresh);   // Firestore: admin đổi món/giá/mã, hoặc trạng thái đơn
-window.addEventListener("storage", e => {            // tab khác (admin cùng máy) ghi LocalStorage
-  if (e.key === "gonow_foods") { const l = load("gonow_foods", null); if (l) applyFoods(l); softRefresh(); }
+window.addEventListener("gn-remote", softRefresh);
+window.addEventListener("storage", e => {
+  if (e.key === "gonow_foods" && typeof applyFoods === "function") { const l = load("gonow_foods", null); if (l) applyFoods(l); softRefresh(); }
   else if (e.key === "gonow_vouchers") {
     const v = load("gonow_vouchers", null);
     if (v) { Object.keys(VOUCHERS).forEach(k => delete VOUCHERS[k]); Object.assign(VOUCHERS, v); }
@@ -1164,14 +1140,13 @@ window.addEventListener("storage", e => {            // tab khác (admin cùng m
   else if (e.key === "gonow_orders") softRefresh();
 });
 
-document.addEventListener("input", e => {   // nhớ thông tin nhận hàng khi gõ (không vẽ lại để không mất con trỏ)
+document.addEventListener("input", e => {
   const k = { cPhone: "phone", cAddr: "addr", cNote: "note" }[e.target.id];
   if (k) { contact[k] = e.target.value; save("gonow_contact", contact); }
 });
 
-// ---- KHỞI TẠO ----
 function init() {
-  setTimeout(() => { if (document.activeElement !== $("#q")) $("#q").value = ""; }, 400);   // trình duyệt hay tự điền tên đăng nhập vào ô tìm kiếm
+  setTimeout(() => { if (document.activeElement !== $("#q")) $("#q").value = ""; }, 400);
   $("#cat").insertAdjacentHTML("beforeend", [...new Set(FOODS.map(f => f.cat))].map(c => `<option>${c}</option>`).join(""));
   const opts = '<option value="">-- Chọn quận --</option>' + Object.keys(DISTRICTS).map(d => `<option>${d}</option>`).join("");
   $("#from").innerHTML = opts; $("#to").innerHTML = opts; $("#from").value = loc;
@@ -1184,10 +1159,10 @@ function init() {
   $("#cfmYes").addEventListener("click", () => closeConfirm(true));
   $("#cfmNo").addEventListener("click", () => closeConfirm(false));
   bindRideInputs(); setRideMode(rideMode);
-  if (useFirebase) auth.onAuthStateChanged(u => {   // khách chưa đăng nhập dùng tài khoản ẩn danh để đơn vẫn gắn với một uid
+  if (useFirebase) auth.onAuthStateChanged(u => {
     if (!u) { setUser(null); auth.signInAnonymously().catch(() => {}); return; }
-    setUser(u.isAnonymous ? null : u); dbWatchOrders(u.uid); renderOrders();
-  });   // tự giữ trạng thái đăng nhập khi tải lại trang
+    setUser(u.isAnonymous ? null : u); if (typeof dbWatchOrders === "function") dbWatchOrders(u.uid); renderOrders();
+  });
   initRailDrag(); renderHero(); renderHome(); renderFood(); renderStores(); renderRide(); renderLoc(); cartChanged(); renderUser(); showTab("food");
 }
 init();
