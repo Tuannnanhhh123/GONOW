@@ -919,6 +919,9 @@ if (typeof guardRecord !== "function") {
 if (typeof guardCancel !== "function") {
   window.guardCancel = function () {};
 }
+if (typeof guardOpen !== "function") {
+  window.guardOpen = function () {};
+}
 
 // ---- ĐƠN HÀNG ----
 function confirmOrder() {
