@@ -1627,6 +1627,9 @@ function init() {
   bindRideInputs(); setRideMode(rideMode);
   if (useFirebase) auth.onAuthStateChanged(u => {   // khách chưa đăng nhập dùng tài khoản ẩn danh để đơn vẫn gắn với một uid
     if (!u) { setUser(null); cartWatch(null); guestReset(); auth.signInAnonymously().catch(() => {}); return; }
+    if (u.isAnonymous && u.uid !== cid && orders.some(o => o.uid === cid)) {   // [FIX] đơn đặt lúc chưa đăng nhập ẩn danh mang uid thiết bị → chuyển sang uid Firebase để khớp bộ lọc & luật Firestore
+      orders.forEach(o => { if (o.uid === cid) o.uid = u.uid; }); save("gonow_orders", orders);
+    }
     setUser(u.isAnonymous ? null : u); dbWatchOrders(u.uid); renderOrders();
     cartWatch(u.isAnonymous ? null : u); if (u.isAnonymous) guestReset();
   });   // tự giữ trạng thái đăng nhập khi tải lại trang
